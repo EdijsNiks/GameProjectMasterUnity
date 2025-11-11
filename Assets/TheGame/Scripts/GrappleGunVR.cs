@@ -13,24 +13,29 @@ public class GrappleGunVR : MonoBehaviour
     public float maxDistance = 25f;
 
     [Header("Spring Settings")]
-    public float swingSpring = 600f;
-    public float swingDamper = 80f;
+    public float swingSpring = 50f;
+    public float swingDamper = 10f;
     public float swingMassScale = 4.5f;
 
     [Header("Reel-In Settings")]
     public float reelSpeed = 3f;         // m/s reel-in rate
-    public float minRopeLength = 2.0f;   // shortest possible rope
-    public float pullForce = 100f;       // smooth pull toward anchor
+    public float minRopeLength = 1.0f;   // shortest possible rope
+    public float pullForce = 10f;       // smooth pull toward anchor
 
     [Header("Visuals")]
     public Color ropeColor = Color.cyan;
     public float ropeWidth = 0.04f;
+
+        [Header("Aiming Laser")]
+    public Color aimColor = Color.red;
+    public float aimWidth = 0.005f;
 
     private LineRenderer rope;
     private SpringJoint joint;
     private InputBridge input;
     private Vector3 hookPoint;
     private float originalDrag;
+        private LineRenderer laser;
 
     void Awake()
     {
@@ -45,12 +50,24 @@ public class GrappleGunVR : MonoBehaviour
         rope.material = new Material(Shader.Find("Unlit/Color")) { color = ropeColor };
 
         originalDrag = playerBody.linearDamping;
+
+        // Laser setup
+        GameObject laserObj = new GameObject("AimLaser");
+        laserObj.transform.SetParent(gunTip);
+        laser = laserObj.AddComponent<LineRenderer>();
+        laser.positionCount = 2;
+        laser.startWidth = laser.endWidth = aimWidth;
+        laser.material = new Material(Shader.Find("Unlit/Color"));
+        laser.material.color = aimColor;
+        laser.enabled = false;
     }
 
     void Update()
     {
         HandleInput();
         UpdateRope();
+        UpdateAimLaser();
+
     }
 
     void FixedUpdate()
@@ -148,12 +165,21 @@ public class GrappleGunVR : MonoBehaviour
         rope.SetPosition(1, hookPoint);
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        if (gunTip)
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawRay(gunTip.position, gunTip.forward * maxDistance);
+    void UpdateAimLaser() {
+        if (input.RightTrigger > 0.1f && joint == null) {
+            laser.enabled = true;
+
+            if (Physics.Raycast(gunTip.position, gunTip.forward, out RaycastHit hit, maxDistance, grappleLayer)) {
+                laser.SetPosition(0, gunTip.position);
+                laser.SetPosition(1, hit.point);
+            }
+            else {
+                laser.SetPosition(0, gunTip.position);
+                laser.SetPosition(1, gunTip.position + gunTip.forward * maxDistance);
+            }
+        }
+        else {
+            laser.enabled = false;
         }
     }
 }
