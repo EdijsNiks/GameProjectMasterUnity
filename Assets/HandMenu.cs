@@ -1,124 +1,125 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using BNG;
 using UnityEngine.UI;
 using System.Collections;
 
+[RequireComponent(typeof(Canvas))]
 public class HandMenu : MonoBehaviour
 {
-    [Header("Menu Settings")]
-    public GameObject menuUI;                  // The canvas or panel for the menu
-    public Grabber leftHandGrabber;            // Assign your LeftHandController (with Grabber)
-    public float menuDistance = 0.15f;         // Distance from hand
-    public Vector3 menuOffset = new Vector3(0f, 0.1f, 0f); // Offset above the hand
-
-    [Header("Animation Settings")]
-    public float appearSpeed = 6f;             // Speed of appear animation
-    public float scaleTarget = 1f;             // Final scale of menu
-    public float fadeSpeed = 6f;               // Speed of fade (if using CanvasGroup)
-
     [Header("Input Settings")]
-    public InputBridge input;
+    public InputActionAsset inputActions;
 
-    private bool menuActive = false;
-    private Vector3 targetScale;
+    [Header("Menu Settings")]
+    public float fadeSpeed = 5f;
+    public float scaleSpeed = 5f;
+    public float targetScale = 1f;
+
+    [Header("UI Buttons")]
+    public Button restartButton;
+    public Button exitButton;
+
+    private Canvas handMenuCanvas;
     private CanvasGroup canvasGroup;
+    private InputAction menuAction;
+    private bool isMenuVisible = false;
     private bool isAnimating = false;
+    private Vector3 desiredScale;
 
-    void Start()
+    private void Awake()
     {
-        if (input == null)
-            input = InputBridge.Instance;
+        handMenuCanvas = GetComponent<Canvas>();
 
-        if (menuUI != null)
-        {
-            targetScale = Vector3.zero;
-            menuUI.transform.localScale = Vector3.zero;
+        // Add CanvasGroup for fade control
+        canvasGroup = handMenuCanvas.GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = handMenuCanvas.gameObject.AddComponent<CanvasGroup>();
 
-            canvasGroup = menuUI.GetComponent<CanvasGroup>();
-            if (canvasGroup == null)
-                canvasGroup = menuUI.AddComponent<CanvasGroup>();
-
-            canvasGroup.alpha = 0f;
-            menuUI.SetActive(false);
-        }
+        handMenuCanvas.enabled = false;
+        handMenuCanvas.transform.localScale = Vector3.zero;
+        canvasGroup.alpha = 0f;
     }
 
-    void Update()
+    private void Start()
     {
-        if (input == null || leftHandGrabber == null || menuUI == null)
-            return;
-
-        // X button toggles menu
-        if (input.XButtonDown)
+        if (inputActions == null)
         {
-            ToggleMenu();
+            Debug.LogError("InputActionAsset not assigned to HandMenuInput!");
+            return;
         }
 
-        // Smooth scale + fade animation
-        if (isAnimating)
-        {
-            menuUI.transform.localScale = Vector3.Lerp(menuUI.transform.localScale, targetScale, Time.deltaTime * appearSpeed);
-            canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, targetScale == Vector3.zero ? 0f : 1f, Time.deltaTime * fadeSpeed);
+        // Find the Menu action from the Left Hand map
+        menuAction = inputActions.FindActionMap("XR LeftHand")?.FindAction("Menu");
 
-            if (Vector3.Distance(menuUI.transform.localScale, targetScale) < 0.01f)
+        if (menuAction == null)
+        {
+            Debug.LogError("Couldn't find 'Menu' action in 'XR LeftHand' map!");
+            return;
+        }
+
+        menuAction.Enable();
+        menuAction.performed += ToggleMenu;
+
+        // Assign button listeners
+        if (restartButton != null)
+            restartButton.onClick.AddListener(OnRestartPressed);
+
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnExitPressed);
+    }
+
+    private void OnDestroy()
+    {
+        if (menuAction != null)
+            menuAction.performed -= ToggleMenu;
+    }
+
+    private void Update()
+    {
+        if (!isAnimating) return;
+
+        // Smooth fade and scale
+        handMenuCanvas.transform.localScale = Vector3.Lerp(handMenuCanvas.transform.localScale, desiredScale, Time.unscaledDeltaTime * scaleSpeed);
+        canvasGroup.alpha = Mathf.Lerp(canvasGroup.alpha, desiredScale == Vector3.zero ? 0f : 1f, Time.unscaledDeltaTime * fadeSpeed);
+
+        if (Vector3.Distance(handMenuCanvas.transform.localScale, desiredScale) < 0.01f)
+        {
+            isAnimating = false;
+
+            if (desiredScale == Vector3.zero)
             {
-                isAnimating = false;
-                if (targetScale == Vector3.zero)
-                    menuUI.SetActive(false);
+                handMenuCanvas.enabled = false;
+                Time.timeScale = 1f;
+                Debug.Log("Hand Menu Closed — Game Resumed");
             }
         }
-
-        // Update position if menu is open
-        if (menuActive)
-        {
-            UpdateMenuPosition();
-        }
     }
 
-    void ToggleMenu()
+    private void ToggleMenu(InputAction.CallbackContext ctx)
     {
-        menuActive = !menuActive;
+        isMenuVisible = !isMenuVisible;
+        handMenuCanvas.enabled = true;
+        desiredScale = isMenuVisible ? Vector3.one * targetScale : Vector3.zero;
+        isAnimating = true;
 
-        if (menuActive)
+        if (isMenuVisible)
         {
-            menuUI.SetActive(true);
-            targetScale = Vector3.one * scaleTarget;
-            Time.timeScale = 0f; // Pause game
+            Time.timeScale = 0f;
             Debug.Log("Hand Menu Opened — Game Paused");
         }
-        else
-        {
-            targetScale = Vector3.zero;
-            Time.timeScale = 1f; // Resume game
-            Debug.Log("Hand Menu Closed — Game Resumed");
-        }
-
-        isAnimating = true;
     }
 
-    void UpdateMenuPosition()
-    {
-        Transform hand = leftHandGrabber.transform;
-        Vector3 forward = hand.forward;
-        Vector3 position = hand.position + forward * menuDistance + hand.TransformDirection(menuOffset);
-
-        menuUI.transform.position = position;
-        menuUI.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
-    }
-
-    // Called by Restart button
+    // === UI Button Events ===
     public void OnRestartPressed()
     {
-        Debug.Log("Restart button pressed — would reload scene.");
+        Debug.Log("Restart button pressed — reloading scene.");
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // Called by Exit button
     public void OnExitPressed()
     {
-        Debug.Log("Exit button pressed — would quit game.");
+        Debug.Log("Exit button pressed — quitting game.");
         Time.timeScale = 1f;
         Application.Quit();
     }

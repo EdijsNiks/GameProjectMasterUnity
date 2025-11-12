@@ -478,21 +478,10 @@
                 {
                     "name": "",
                     "id": "863d5818-8537-46f8-8861-0a81bf75c8b7",
-                    "path": "<XRController>{LeftHand}/start",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Generic XR Controller",
-                    "action": "Menu",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "8e123105-23b3-48fe-b661-e1c0a98b89a3",
                     "path": "<XRController>{LeftHand}/menu",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": "Generic XR Controller",
                     "action": "Menu",
                     "isComposite": false,
                     "isPartOfComposite": false
