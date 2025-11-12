@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "VRIF Default Input Actions",
     "maps": [
         {
@@ -192,7 +193,7 @@
                     "name": "Menu",
                     "type": "Button",
                     "id": "c2dedd64-ee19-4581-bed1-8180a29cf847",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -481,6 +482,17 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Generic XR Controller",
+                    "action": "Menu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8e123105-23b3-48fe-b661-e1c0a98b89a3",
+                    "path": "<XRController>{LeftHand}/menu",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
                     "action": "Menu",
                     "isComposite": false,
                     "isPartOfComposite": false
