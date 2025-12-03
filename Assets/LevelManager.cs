@@ -22,6 +22,10 @@ public class LevelManager : MonoBehaviour
     [Header("Respawn")]
     public UnityEvent OnRespawn;
 
+        [Header("Player & start position")]
+    public Transform player;
+    public Transform startPoint;
+
     void Awake()
     {
         if (Instance != null && Instance != this) Destroy(gameObject);
@@ -57,14 +61,9 @@ public class LevelManager : MonoBehaviour
 
     public void FinishLevel()
     {
-        if (levelFinished) return;
 
-        levelFinished = true;
-        levelStarted = false;
-
-        SavePB();
+        SavePB(); // Keep your PB saving
         Debug.Log("[LevelManager] Level finished!");
-        SceneManager.LoadScene("MainHub");
     }
 
     public void PlayerDied()
@@ -101,7 +100,7 @@ public void RespawnPlayer()
         }
     }
 
-    void SavePB()
+    public void SavePB()
     {
         string key = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name + "_PB";
 

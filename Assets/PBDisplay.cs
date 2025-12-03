@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 public class PBDisplay : MonoBehaviour
 {
     [Header("Settings")]
-    public string levelSceneName = "Level1";
+    public string levelSceneName = "MainHub";
     
     [Header("References")]
     public TMP_Text text;

@@ -1,23 +1,41 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class SceneTeleporter : MonoBehaviour
 {
-    [Tooltip("Write the name of the scene you want to load.")]
-    public string targetScene;
+    [Tooltip("Assign the empty GameObject where the player should be teleported.")]
+    public Transform playerSpawn;
+
+    [Tooltip("Assign the specific object to teleport (e.g., PlayerController)")]
+    public Transform objectToTeleport;
 
     private void OnTriggerEnter(Collider other)
     {
-        // Only load if Player enters
-        if (!other.transform.root.CompareTag("Player")) return;
+        // Only teleport if the Player enters
+        if (!other.CompareTag("Player")) return;
 
-        // Make sure a scene name was assigned
-        if (string.IsNullOrEmpty(targetScene))
+        // Make sure spawn point and object are assigned
+        if (playerSpawn == null)
         {
-            Debug.LogWarning("SceneTeleporter is missing a scene name!");
+            Debug.LogWarning("SceneTeleporter is missing a player spawn point!");
             return;
         }
 
-        SceneManager.LoadScene(targetScene);
+        if (objectToTeleport == null)
+        {
+            Debug.LogWarning("SceneTeleporter is missing the object to teleport!");
+            return;
+        }
+
+        // Teleport the assigned object
+        objectToTeleport.position = playerSpawn.position;
+        objectToTeleport.rotation = playerSpawn.rotation;
+
+        // Reset physics if it has a Rigidbody
+        Rigidbody rb = objectToTeleport.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 }
