@@ -81,7 +81,15 @@ namespace BNG {
             }
 
             audioSource = GetComponent<AudioSource>();
-        }      
+        }
+
+        // ADDED: Update method to ensure gravity is restored if grapple is not active
+        void Update() {
+            // Safety check: If not grappling and not climbing, ensure gravity is on
+            if (!grappling && !climbing) {
+                changeGravity(true);
+            }
+        }
 
         private void LateUpdate() {
             // Draw Lines in LateUpdate
@@ -117,6 +125,11 @@ namespace BNG {
                 }
             }
             else {
+                // FIXED: Always release grapple when trigger is released
+                if (grappling || wasGrappling) {
+                    onReleaseGrapple();
+                }
+                
                 grappling = false;
                 requireRelease = false;                            
             }
@@ -152,7 +165,7 @@ namespace BNG {
         // Called when grappling previous frame, but not this one
         void onReleaseGrapple() {
 
-            // Reset gravity back to normal
+            // FIXED: Always reset gravity back to normal
             changeGravity(true);
 
             if(grappleTargetRigid && isDynamic) {
@@ -167,14 +180,23 @@ namespace BNG {
             }
 
             // Reset Climbing
-            ClimbHelper.transform.localPosition = Vector3.zero;
-            playerClimbing.RemoveClimber(thisGrabber);
+            if (ClimbHelper != null) {
+                ClimbHelper.transform.localPosition = Vector3.zero;
+            }
+            
+            if (playerClimbing != null && thisGrabber != null) {
+                playerClimbing.RemoveClimber(thisGrabber);
+            }
+            
             climbing = false;
 
             grappling = false;
             validTargetFound = false;
             isDynamic = false;
             wasGrappling = false;
+            
+            // ADDED: Debug log to confirm gravity is being restored
+            Debug.Log("Grapple released - Gravity restored");
         }
 
         // Draw area where Grapple will land
@@ -290,7 +312,7 @@ namespace BNG {
                 else {
                     Vector3 moveDirection = (HitTargetPrefab.position - MuzzleTransform.position) * GrappleReelForce;
 
-                    // Turn off gravity before we move
+                    // FIXED: Only turn off gravity while actively reeling
                     changeGravity(false);
 
                     // Use smooth loco method if available
@@ -351,6 +373,9 @@ namespace BNG {
         }
 
         void dropGrapple() {
+            // FIXED: Ensure gravity is restored when dropping grapple
+            changeGravity(true);
+            
             grappling = false;
             validTargetFound = false;
             isDynamic = false;
@@ -361,6 +386,11 @@ namespace BNG {
             if(playerGravity) {
                 playerGravity.ToggleGravity(gravityOn);
             }
+        }
+        
+        // ADDED: Public method to check if currently grappling (for other scripts)
+        public bool IsGrappling() {
+            return grappling;
         }
     }
 }
